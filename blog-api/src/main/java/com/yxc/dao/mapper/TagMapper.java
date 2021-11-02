@@ -12,4 +12,10 @@ public interface TagMapper extends BaseMapper<Tag> {
 
     //根据文章id查询标签列表
     List<Tag> findTagsByArticleId(Long ariticleId);
+
+    //查询最热标签 dao底层还用不到Vo对象，由Service层来操作
+    List<Long> findHotTagIds(int limit);
+
+    //通过tagId寻找tagName
+    List<Tag> findTagsByTagIds(List<Long> hotTagIds);
 }

@@ -3,7 +3,10 @@ package com.yxc.vo;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-//收集从前端返回的种值 根据文档来看
+/*
+    这个Vo类封装的是各种状态码
+    以及前端所需要的数据
+*/
 @Data
 //生成全属性的构造方法
 @AllArgsConstructor

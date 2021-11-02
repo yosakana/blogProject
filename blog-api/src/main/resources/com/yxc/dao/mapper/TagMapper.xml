@@ -10,5 +10,27 @@
               (select tag_id from ms_article_tag where article_id = #{ariticleId})
     </select>
 
+    <!-- 查询最热标签 -->
+    <select id="findHotTagIds" parameterType="int" resultType="long">
+        select tag_id from ms_article_tag
+        group by tag_id order by count(*) desc
+
+        <!-- limit查询是从0开始算第一个的 -->
+        limit 0,#{limit}
+    </select>
+
+    <select id="findTagsByTagIds" parameterType="list" resultType="com.yxc.dao.pojo.Tag">
+        <!-- 注意数据库的属性和实体类属性名称是否一致
+             不一样就采用别名的形式-->
+        select id,tag_name as tagName from ms_tag
+        <where>
+            id in  <!-- 这边的collection要跟类中传过来的参数名称一致 -->
+            <foreach collection="hotTagIds" item="tagId" separator="," open="(" close=")">
+                #{tagId}
+            </foreach>
+        </where>
+
+    </select>
+
 
 </mapper>

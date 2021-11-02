@@ -25,4 +25,33 @@ public class ArticleController {
         System.out.println(123);
         return articleService.listArticle(pageParams);
     }
+
+    /**
+     * 首页最热文章模块
+     * @return
+     */
+    @PostMapping("/hot")
+    public Result hotArticle(){
+        int limit = 5;
+        return articleService.findHotArticles(limit);
+    }
+
+    /**
+     * 首页最新文章模块
+     * @return
+     */
+    @PostMapping("/new")
+    public Result newArticles(){
+        int limit = 5;
+        return articleService.newArticles(limit);
+    }
+
+    /**
+     * 文章归档（返回年月日，有几篇）
+     * @return
+     */
+    @PostMapping("/listArchives")
+    public Result listArchives(){
+        return articleService.listArchives();
+    }
 }

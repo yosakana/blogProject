@@ -9,16 +9,21 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-//@RequestMapping("/tags")
+@RequestMapping("/tags")
 public class TagsController {
 
     //Web层请求Service层
     @Autowired
     private TagService tagService;
 
-//    //有一个专门返回数据和成功与否的vo实体类
-//    @GetMapping("/hot")
-//    public Result hot(){
-//        return null;
-//    }
+    //有一个专门返回数据和成功与否的vo实体类
+    @GetMapping("/hot")
+    public Result hot(){
+
+        //默认查询6个最热标签
+        int limit = 6;
+        Result hots = tagService.hots(6);
+
+        return hots;
+    }
 }

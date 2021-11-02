@@ -1,7 +1,9 @@
 package com.yxc.service.imp;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.yxc.dao.dos.Archives;
 import com.yxc.dao.mapper.ArticleMapper;
 import com.yxc.dao.pojo.Article;
 import com.yxc.dao.pojo.SysUser;
@@ -68,6 +70,63 @@ public class ArticleServiceImp implements ArticleService {
 
     }
 
+    /**
+     * 首页最热文章模块实现
+     * @param limit 查询几条
+     * @return
+     */
+    @Override
+    public Result findHotArticles(int limit) {
+
+        LambdaQueryWrapper<Article> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        //sql语句的 条件构造器 将select结果按观看数降序排列
+        lambdaQueryWrapper.orderByDesc(Article::getViewCounts);
+
+        //获取模块所需要的id和标题
+        lambdaQueryWrapper.select(Article::getId , Article::getTitle);
+
+        //无视任何条件直接拼到sql语句的最后（有SQL注入的风险）
+        /* 要加空格否则会连在一起 */
+        lambdaQueryWrapper.last("limit " + limit);
+
+        // select id,tittle from ms_tittle order by view_counts limit #{limit}
+        List<Article> articles = articleMapper.selectList(lambdaQueryWrapper);
+
+
+
+        //传给前端的时候，统一转成Vo对象进行传递
+        return Result.success(copyList(articles, false , false));
+    }
+
+    /**
+     * 首页最新文章模块
+     * @param limit
+     * @return
+     */
+    @Override
+    public Result newArticles(int limit) {
+        //条件构造器的泛型一定要设置
+        LambdaQueryWrapper<Article> lambdaQueryWrapper = new LambdaQueryWrapper();
+        lambdaQueryWrapper.orderByDesc(Article::getCreateDate);
+        lambdaQueryWrapper.select(Article::getId , Article::getTitle);
+
+        List<Article> articles = articleMapper.selectList(lambdaQueryWrapper);
+
+        return Result.success(copyList(articles , false , false));
+
+    }
+
+    /**
+     * 文章归档
+     * @return
+     */
+    @Override
+    public Result listArchives() {
+        List<Archives>  listArchivres = articleMapper.listArchivres();
+        return Result.success(listArchivres);
+    }
+
+
     private List<ArticleVo> copyList(List<Article> records , boolean isTag , boolean isAuthor){
         //TODO
         //此处可以对迭代进行优化
@@ -78,28 +137,37 @@ public class ArticleServiceImp implements ArticleService {
 
         while(recordsIterator.hasNext()){
             Article article = recordsIterator.next();
+
+            System.out.println(article);
+
             list.add(copy(article,isTag,isAuthor));
         }
 
-        System.out.println("copy之后："+list.toString());
+
 
         return list;
     }
 
 
-    //这里有问题
     private ArticleVo copy(Article article , boolean isTag , boolean isAuthor){
         ArticleVo articleVo = new ArticleVo();
         BeanUtils.copyProperties(article , articleVo);
 
         //转换article获取的Long时间至String
-        Date date = new Date(article.getCreateDate());
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-        String formatedDate = sdf.format(date);
 
-        articleVo.setCreateDate(formatedDate);
+        /*
+            这个方法有个弊端，如果是不需要创建时间的模块调用它的话会出现空指针问题
+            所以要加个判断
+        */
+        if(article.getCreateDate() != null) {
 
+            Date date = new Date(article.getCreateDate());
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+            String formatedDate = sdf.format(date);
 
+            articleVo.setCreateDate(formatedDate);
+
+        }
 
         /* 并不是所有的接口，都需要标签，作者信息 */
         if(isTag){
@@ -116,5 +184,8 @@ public class ArticleServiceImp implements ArticleService {
         //返回null了啊！！！！！！！！！ return null;
         return articleVo;
     }
+
+
+
 
 }
