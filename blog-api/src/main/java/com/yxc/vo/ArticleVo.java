@@ -1,4 +1,4 @@
-package com.yxc.vo.params;
+package com.yxc.vo;
 
 import lombok.Data;
 

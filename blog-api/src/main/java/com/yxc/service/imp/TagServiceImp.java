@@ -4,7 +4,7 @@ import com.yxc.dao.mapper.TagMapper;
 import com.yxc.dao.pojo.Tag;
 import com.yxc.service.TagService;
 import com.yxc.vo.Result;
-import com.yxc.vo.params.TagVo;
+import com.yxc.vo.TagVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

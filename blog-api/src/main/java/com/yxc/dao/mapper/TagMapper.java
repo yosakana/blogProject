@@ -2,7 +2,6 @@ package com.yxc.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.yxc.dao.pojo.Tag;
-import com.yxc.vo.params.TagVo;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;

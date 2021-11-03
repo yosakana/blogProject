@@ -1,7 +1,7 @@
 package com.yxc.service;
 
 import com.yxc.vo.Result;
-import com.yxc.vo.params.TagVo;
+import com.yxc.vo.TagVo;
 
 import java.util.List;
 

@@ -1,7 +1,6 @@
 package com.yxc.service.imp;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yxc.dao.dos.Archives;
 import com.yxc.dao.mapper.ArticleMapper;
@@ -11,7 +10,7 @@ import com.yxc.service.ArticleService;
 import com.yxc.service.SysUserService;
 import com.yxc.service.TagService;
 import com.yxc.vo.Result;
-import com.yxc.vo.params.ArticleVo;
+import com.yxc.vo.ArticleVo;
 import com.yxc.vo.params.PageParams;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
