@@ -11,6 +11,7 @@ public class WebMVCConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         //跨域配置
         //允许其他域名访问 域名就是ip地址加端口
+
         registry.addMapping("/**")
                 .allowCredentials(true)
                 .allowedOriginPatterns("*")

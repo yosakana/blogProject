@@ -76,4 +76,17 @@ public class SysUserServiceImp implements SysUserService {
 
         return Result.success(loginUserVo);
     }
+
+    @Override
+    public SysUser findUserByAccount(String account) {
+        LambdaQueryWrapper<SysUser> lambdaQueryWrapper = new LambdaQueryWrapper();
+        lambdaQueryWrapper.eq(SysUser::getAccount,account);
+        SysUser sysUser = sysUserMapper.selectOne(lambdaQueryWrapper);
+        return sysUser;
+    }
+
+    @Override
+    public void save(SysUser sysUser) {
+        sysUserMapper.insert(sysUser);
+    }
 }

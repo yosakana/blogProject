@@ -11,4 +11,6 @@ public interface LoginService {
     public Result login(LoginParam loginParam);
 
     Result logout(String token);
+
+    Result register(LoginParam loginParam);
 }

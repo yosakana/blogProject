@@ -15,6 +15,7 @@ import org.springframework.boot.json.JsonParser;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +23,9 @@ import java.util.concurrent.TimeUnit;
 import static org.apache.logging.log4j.message.MapMessage.MapFormat.JSON;
 
 @Service
+//一个事务控制，也可以放在接口类，如果有多个实现类的话
+//用处主要是防止出现业务逻辑出现异常，比如出现异常还继续对数据库进行操作
+@Transactional
 public class LoginServiceImp implements LoginService {
 
     @Autowired
@@ -103,6 +107,9 @@ public class LoginServiceImp implements LoginService {
         return Result.success(token);
     }
 
+
+
+
     /**
      * 退出登录(直接删除掉redis的token就行了)
      * @param token
@@ -113,6 +120,57 @@ public class LoginServiceImp implements LoginService {
         redisTemplate.delete("TOKEN_"+token);
 
         return Result.success(null);
+    }
+
+    @Override
+    public Result register(LoginParam loginParam) {
+        /**  注册的验证流程
+         * 1.判断参数 是否合法
+         * 2.判断账户是否存在，存在 返回账户已经被注册
+         * 3.不存在就注册
+         * 4.生成token
+         * 5.存入redis并返回
+         * 6.注意 加上事务，一旦中间的任何过程出现问题，注册的用户 需要回滚
+         */
+        String account = loginParam.getAccount();
+        String password = loginParam.getPassword();
+        String nickname = loginParam.getNickname();
+
+        //1.
+        if(StringUtils.isBlank(account) || StringUtils.isBlank(password) || StringUtils.isBlank(nickname)){
+            return Result.fail(ErrorCode.PARAMS_ERROR.getCode(), ErrorCode.PARAMS_ERROR.getMsg());
+        }
+
+        //2.
+        SysUser sysUser = sysUserService.findUserByAccount(loginParam.getAccount());
+        if(sysUser != null){
+            return Result.fail(ErrorCode.ACCOUNT_EXIST.getCode(), ErrorCode.ACCOUNT_EXIST.getMsg());
+        }
+
+        //3.
+        sysUser = new SysUser();
+        sysUser.setNickname(nickname);
+        sysUser.setAccount(account);
+        sysUser.setPassword(DigestUtils.md5Hex(password+salt));
+        sysUser.setCreateDate(System.currentTimeMillis());
+        sysUser.setLastLogin(System.currentTimeMillis());
+        sysUser.setAvatar("/static/img/logo.b3a48c0.png");
+        sysUser.setAdmin(1); //1 为true
+        sysUser.setDeleted(0); // 0 为false
+        sysUser.setSalt("");
+        sysUser.setStatus("");
+        sysUser.setEmail("");
+        this.sysUserService.save(sysUser);
+
+        //4.
+        String token = JWTUtils.createToken(sysUser.getId());
+
+
+        //5.
+        ValueOperations valueOperations = redisTemplate.opsForValue();
+        valueOperations.set("TOKEN_"+ token , com.alibaba.fastjson.JSON.toJSONString(sysUser) , 1 , TimeUnit.DAYS);
+        return Result.success(token);
+
     }
 }
 
