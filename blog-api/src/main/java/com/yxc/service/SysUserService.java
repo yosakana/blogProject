@@ -2,6 +2,7 @@ package com.yxc.service;
 
 import com.yxc.dao.pojo.SysUser;
 import com.yxc.vo.Result;
+import com.yxc.vo.UserVo;
 
 public interface SysUserService {
 
@@ -15,4 +16,6 @@ public interface SysUserService {
     SysUser findUserByAccount(String account);
 
     void save(SysUser sysUser);
+
+    UserVo findCommentUserById(Long authorId);
 }

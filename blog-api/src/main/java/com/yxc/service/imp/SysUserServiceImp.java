@@ -9,6 +9,7 @@ import com.yxc.service.SysUserService;
 import com.yxc.vo.ErrorCode;
 import com.yxc.vo.LoginUserVo;
 import com.yxc.vo.Result;
+import com.yxc.vo.UserVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ public class SysUserServiceImp implements SysUserService {
     @Override
     public SysUser findUserById(Long id) {
         SysUser sysUser = sysUserMapper.selectById(id);
-        if (sysUser == null){
+        if (sysUser == null) {
             sysUser = new SysUser();
             sysUser.setNickname("无名字");
         }
@@ -34,6 +35,7 @@ public class SysUserServiceImp implements SysUserService {
 
     /**
      * 登录功能（通过前端传来的账号密码查找数据库）
+     *
      * @param account
      * @param password
      * @return
@@ -42,10 +44,10 @@ public class SysUserServiceImp implements SysUserService {
     public SysUser findUser(String account, String password) {
         LambdaQueryWrapper<SysUser> wrapper = new LambdaQueryWrapper<SysUser>();
         //这个是 字段 = 值 的条件
-        wrapper.eq(SysUser::getAccount,account);
-        wrapper.eq(SysUser::getPassword,password);
+        wrapper.eq(SysUser::getAccount, account);
+        wrapper.eq(SysUser::getPassword, password);
         //这个是只select这些字段
-        wrapper.select(SysUser::getAccount , SysUser::getId , SysUser::getAvatar , SysUser::getNickname);
+        wrapper.select(SysUser::getAccount, SysUser::getId, SysUser::getAvatar, SysUser::getNickname);
 
         SysUser sysUser = sysUserMapper.selectOne(wrapper);
         return sysUser;
@@ -53,6 +55,7 @@ public class SysUserServiceImp implements SysUserService {
 
     /**
      * 通过token查询用户信息
+     *
      * @param token
      * @return
      */
@@ -67,12 +70,12 @@ public class SysUserServiceImp implements SysUserService {
 
         //通过这个方法 返回正确的SysUser信息
         SysUser sysUser = loginService.checkToken(token);
-        if(sysUser == null){
-             return Result.fail(ErrorCode.TOKEN_ERROR.getCode(), ErrorCode.TOKEN_ERROR.getMsg());
+        if (sysUser == null) {
+            return Result.fail(ErrorCode.TOKEN_ERROR.getCode(), ErrorCode.TOKEN_ERROR.getMsg());
         }
 
         LoginUserVo loginUserVo = new LoginUserVo();
-        BeanUtils.copyProperties(sysUser,loginUserVo);
+        BeanUtils.copyProperties(sysUser, loginUserVo);
 
         return Result.success(loginUserVo);
     }
@@ -80,7 +83,7 @@ public class SysUserServiceImp implements SysUserService {
     @Override
     public SysUser findUserByAccount(String account) {
         LambdaQueryWrapper<SysUser> lambdaQueryWrapper = new LambdaQueryWrapper();
-        lambdaQueryWrapper.eq(SysUser::getAccount,account);
+        lambdaQueryWrapper.eq(SysUser::getAccount, account);
         SysUser sysUser = sysUserMapper.selectOne(lambdaQueryWrapper);
         return sysUser;
     }
@@ -89,4 +92,27 @@ public class SysUserServiceImp implements SysUserService {
     public void save(SysUser sysUser) {
         sysUserMapper.insert(sysUser);
     }
+
+
+    @Override
+    public UserVo findCommentUserById(Long authorId) {
+        SysUser sysUser = sysUserMapper.selectById(authorId);
+
+        if (sysUser == null) {
+            sysUser = new SysUser();
+            sysUser.setNickname("无名字");
+            sysUser.setAvatar("/static/img/logo.b3a48c0.png");
+            sysUser.setId(1L);
+        }
+
+        UserVo userVo = new UserVo();
+        userVo.setAvatar(sysUser.getAvatar());
+        userVo.setId(sysUser.getId());
+        userVo.setNickname(sysUser.getNickname());
+
+        return userVo;
+    }
+
+
 }
+

@@ -2,6 +2,7 @@ package com.yxc.controller;
 
 
 import com.yxc.service.ArticleService;
+import com.yxc.service.CommentService;
 import com.yxc.vo.ArticleVo;
 import com.yxc.vo.Result;
 import com.yxc.vo.params.PageParams;
@@ -15,6 +16,8 @@ public class ArticleController {
 
     @Autowired
     private ArticleService articleService;
+    @Autowired
+    private CommentService commentService;
 
     /**
      * 首页 list文章列表
@@ -62,6 +65,5 @@ public class ArticleController {
 
         return Result.success(articleVo);
     }
-
 
 }
