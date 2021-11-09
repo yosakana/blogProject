@@ -2,6 +2,7 @@ package com.yxc.controller;
 
 
 import com.yxc.service.ArticleService;
+import com.yxc.vo.ArticleVo;
 import com.yxc.vo.Result;
 import com.yxc.vo.params.PageParams;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,4 +55,13 @@ public class ArticleController {
     public Result listArchives(){
         return articleService.listArchives();
     }
+
+    @PostMapping("view/{id}")
+    public Result findArticleById(@PathVariable("id") Long id) {
+        ArticleVo articleVo = articleService.findArticleById(id);
+
+        return Result.success(articleVo);
+    }
+
+
 }

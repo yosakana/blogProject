@@ -1,5 +1,6 @@
 package com.yxc.service;
 
+import com.yxc.vo.ArticleVo;
 import com.yxc.vo.Result;
 import com.yxc.vo.params.PageParams;
 
@@ -30,4 +31,11 @@ public interface ArticleService {
      * @return
      */
     Result listArchives();
+
+    /**
+     * 通过id寻找文章
+     * @param id
+     * @return
+     */
+    ArticleVo findArticleById(Long id);
 }
