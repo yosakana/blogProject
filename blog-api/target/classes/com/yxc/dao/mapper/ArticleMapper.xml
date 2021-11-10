@@ -4,8 +4,50 @@
 <mapper namespace="com.yxc.dao.mapper.ArticleMapper">
 
     <select id="listArchivres" resultType="com.yxc.dao.dos.Archives">
-        select year(create_date) as year,month(create_date) as month,count(*) as count
+        select FROM_UNIXTIME(create_date/1000,'%Y') as year,FROM_UNIXTIME(create_date/1000,'%m') as month,count(*) as count
         from ms_article
         group by year,month
+    </select>
+
+    <resultMap id="articleMap" type="com.yxc.dao.pojo.Article">
+        <id column="id" property="id" />
+        <result column="author_id" property="authorId"/>
+        <result column="comment_counts" property="commentCounts"/>
+        <result column="create_date" property="createDate"/>
+        <result column="summary" property="summary"/>
+        <result column="title" property="title"/>
+        <result column="view_counts" property="viewCounts"/>
+        <result column="weight" property="weight"/>
+        <result column="body_id" property="bodyId"/>
+        <result column="category_id" property="categoryId"/>
+    </resultMap>
+
+    <!--
+                               Long categoryId,
+                               Long tagId,
+                               String year,
+                               String month
+    -->
+
+    <!-- mybatis没办法自动进行 表的属性 和 类的属性 相映射 ，所以 手动进行映射 -->
+    <!-- 只是对结果进行了resultMap进行了映射，语句内容还是得手动进行书写 -->
+    <select id="listArticle" resultMap="articleMap">
+        select * from ms_article
+        <where>
+            1 = 1
+            <if test="categoryId != null">
+                and category_id = #{categoryId}
+            </if>
+
+            <if test="tagId != null">
+                and id in (select article_id from ms_article_tag where tag_id = #{tagId})
+            </if>
+
+            <if test="year != null and year.length > 0 and month != null and month.length > 0">
+                <!-- 通过年月进行查询，把时间戳进行一个转换 与前端传来的年月 进行比对 == -->
+                and (FROM_UNIXTIME(create_date/1000,'%Y') = #{year} and FROM_UNIXTIME(create_date/1000,'%m') = #{month})
+            </if>
+            order by weight,create_date desc
+        </where>
     </select>
 </mapper>

@@ -55,6 +55,7 @@ public class LogAspect {
         //先获取其方法签名 point.getSignature , 需要强转成 MethodSignature
         MethodSignature signature = (MethodSignature)point.getSignature();
 
+
         //通过signature获取切点所执行的方法
         Method method = signature.getMethod();
 
@@ -62,10 +63,12 @@ public class LogAspect {
         LogAnnotation logAnnotation = method.getAnnotation(LogAnnotation.class);
 
         log.info("=====================log start================================");
+
+        //这里是占位符的形式, {} 用后面的参数填充这里
         log.info("module:{}",logAnnotation.module());
         log.info("operation:{}",logAnnotation.operator());
 
-        //请求的方法名
+        //前端请求所对应的方法名
         String className = point.getTarget().getClass().getName();
         String methodName = signature.getName();
         log.info("request method:{}",className+"."+methodName+"()");

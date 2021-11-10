@@ -1,6 +1,7 @@
 package com.yxc.service.imp;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yxc.dao.dos.Archives;
 import com.yxc.dao.mapper.ArticleBodyMapper;
@@ -38,13 +39,34 @@ public class ArticleServiceImp implements ArticleService {
     private ArticleBodyMapper articleBodyMapper;
 
     /**
-     * 分页查询 文章列表
+     * 最新版的文章列表获取操作
      *
      * @param pageParams
      * @return
      */
     @Override
     public Result listArticle(PageParams pageParams) {
+        Page<Article> page = new Page<>();
+        IPage<Article> articleIPage = articleMapper.listArticle(page,
+                pageParams.getCategoryId(),
+                pageParams.getTagId(),
+                pageParams.getYear(),
+                pageParams.getMonth());
+
+        List<Article> records = articleIPage.getRecords();
+
+        return Result.success(copyList(records , true , true));
+
+    }
+
+
+    /**
+     * 分页查询 文章列表
+     *
+     * @param pageParams
+     * @return
+     */
+    public Result list1Article(PageParams pageParams) {
         /**
          * 1. 分页查询 article数据库表
          * 根据前端返回的页数，和每页的条数进行Page对象的设置
@@ -53,6 +75,30 @@ public class ArticleServiceImp implements ArticleService {
 
         //是否置顶进行排序
         LambdaQueryWrapper<Article> queryWrapper = new LambdaQueryWrapper<>();
+
+        //在类别分类里的文章列表展示
+        if (pageParams.getCategoryId() != null) {
+            queryWrapper.eq(Article::getCategoryId, pageParams.getCategoryId());
+        }
+
+        List<Long> articleIdList = new ArrayList<>();
+        //在标签类别里的文章列表展示
+        if (pageParams.getTagId() != null) {
+            LambdaQueryWrapper<ArticleTag> tagQueryWrapper = new LambdaQueryWrapper();
+            tagQueryWrapper.eq(ArticleTag::getTagId, pageParams.getTagId());
+            List<ArticleTag> articleTags = articleTagMapper.selectList(tagQueryWrapper);
+
+            for (ArticleTag articleTag : articleTags) {
+                articleIdList.add(articleTag.getArticleId());
+            }
+
+            if (articleIdList.size() > 0) {
+                queryWrapper.in(Article::getId, articleIdList);
+            }
+
+        }
+
+
         //order by weight desc,createTime desc
         queryWrapper.orderByDesc(Article::getWeight, Article::getCreateDate);
 
@@ -71,6 +117,7 @@ public class ArticleServiceImp implements ArticleService {
         return Result.success(articleVoList);
 
     }
+
 
     /**
      * 首页最热文章模块实现
@@ -192,7 +239,8 @@ public class ArticleServiceImp implements ArticleService {
 
         //TODO 这个地方有问题
         Map<String, String> map = new HashMap<>();
-        map.put("id",article.getId().toString());
+        map.put("id", article.getId().toString());
+
 
         //返回的形式{"id":12232323},会自动解析成json
         return Result.success(map);

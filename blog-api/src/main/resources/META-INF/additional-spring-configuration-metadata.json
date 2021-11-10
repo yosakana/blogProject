@@ -1,0 +1,15 @@
+{
+  "properties": [
+    {
+      "name": "qiniu.accessKey",
+      "type": "java.lang.String",
+      "description": ".",
+      "defaultValue": "RH6ouixbP9iFjb6FlxdTuP460jQRlpSBLn9q3Mnm"
+    },
+    {
+      "name": "qiniu.accessSecretKey",
+      "type": "java.lang.String",
+      "description": ".",
+      "defaultValue": "Ti8yFYOUI3PvEJhNf1KD0cHpM76B7gbKnLbI_0JZ"
+    }
+  ] }
