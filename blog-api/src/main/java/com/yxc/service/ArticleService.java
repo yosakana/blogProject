@@ -2,6 +2,7 @@ package com.yxc.service;
 
 import com.yxc.vo.ArticleVo;
 import com.yxc.vo.Result;
+import com.yxc.vo.params.ArticleParam;
 import com.yxc.vo.params.PageParams;
 
 public interface ArticleService {
@@ -38,4 +39,6 @@ public interface ArticleService {
      * @return
      */
     ArticleVo findArticleById(Long id);
+
+    Result publish(ArticleParam articleParam);
 }

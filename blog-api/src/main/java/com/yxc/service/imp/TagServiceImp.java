@@ -72,4 +72,17 @@ public class TagServiceImp implements TagService {
         //TODO 理解一下这部分的Result
         return Result.success(hotTags);
     }
+
+
+    @Override
+    public Result findAllTags() {
+
+        List<Tag> tags = tagMapper.selectList(null);
+
+        List<TagVo> tagVos = copyList(tags);
+
+
+        return Result.success(tagVos);
+    }
+
 }

@@ -26,4 +26,13 @@ public class TagsController {
 
         return hots;
     }
+
+    /**
+     * 寻找所有文章标签
+     * @return
+     */
+    @GetMapping
+    public Result findAllTags(){
+        return tagService.findAllTags();
+    }
 }

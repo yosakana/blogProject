@@ -5,25 +5,23 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yxc.dao.dos.Archives;
 import com.yxc.dao.mapper.ArticleBodyMapper;
 import com.yxc.dao.mapper.ArticleMapper;
+import com.yxc.dao.mapper.ArticleTagMapper;
 import com.yxc.dao.pojo.Article;
 import com.yxc.dao.pojo.ArticleBody;
+import com.yxc.dao.pojo.ArticleTag;
 import com.yxc.dao.pojo.SysUser;
 import com.yxc.service.*;
-import com.yxc.vo.ArticleBodyVo;
-import com.yxc.vo.CategoryVo;
-import com.yxc.vo.Result;
-import com.yxc.vo.ArticleVo;
+import com.yxc.vo.*;
+import com.yxc.vo.params.ArticleParam;
 import com.yxc.vo.params.PageParams;
 import org.joda.time.DateTime;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class ArticleServiceImp implements ArticleService {
@@ -34,7 +32,10 @@ public class ArticleServiceImp implements ArticleService {
     private TagService tagService;
     @Autowired
     private SysUserService sysUserService;
-
+    @Autowired
+    private ArticleTagMapper articleTagMapper;
+    @Autowired
+    private ArticleBodyMapper articleBodyMapper;
 
     /**
      * 分页查询 文章列表
@@ -64,8 +65,7 @@ public class ArticleServiceImp implements ArticleService {
 
         //不能直接返回Article集合，里面的数据有一部分是Web不需要的，所以需要通过
         //ArticleVo进行返回，因为Vo对象的本质是前端所需要的数据
-        List<ArticleVo> articleVoList = copyList(records , true, true , false ,false);
-
+        List<ArticleVo> articleVoList = copyList(records, true, true, false, false);
 
 
         return Result.success(articleVoList);
@@ -74,6 +74,7 @@ public class ArticleServiceImp implements ArticleService {
 
     /**
      * 首页最热文章模块实现
+     *
      * @param limit 查询几条
      * @return
      */
@@ -85,7 +86,7 @@ public class ArticleServiceImp implements ArticleService {
         lambdaQueryWrapper.orderByDesc(Article::getViewCounts);
 
         //获取模块所需要的id和标题
-        lambdaQueryWrapper.select(Article::getId , Article::getTitle);
+        lambdaQueryWrapper.select(Article::getId, Article::getTitle);
 
         //无视任何条件直接拼到sql语句的最后（有SQL注入的风险）
         /* 要加空格否则会连在一起 */
@@ -95,13 +96,13 @@ public class ArticleServiceImp implements ArticleService {
         List<Article> articles = articleMapper.selectList(lambdaQueryWrapper);
 
 
-
         //传给前端的时候，统一转成Vo对象进行传递
-        return Result.success(copyList(articles, false , false , false ,false));
+        return Result.success(copyList(articles, false, false, false, false));
     }
 
     /**
      * 首页最新文章模块
+     *
      * @param limit
      * @return
      */
@@ -110,21 +111,22 @@ public class ArticleServiceImp implements ArticleService {
         //条件构造器的泛型一定要设置
         LambdaQueryWrapper<Article> lambdaQueryWrapper = new LambdaQueryWrapper();
         lambdaQueryWrapper.orderByDesc(Article::getCreateDate);
-        lambdaQueryWrapper.select(Article::getId , Article::getTitle);
+        lambdaQueryWrapper.select(Article::getId, Article::getTitle);
 
         List<Article> articles = articleMapper.selectList(lambdaQueryWrapper);
 
-        return Result.success(copyList(articles , false , false , false , false));
+        return Result.success(copyList(articles, false, false, false, false));
 
     }
 
     /**
      * 文章归档
+     *
      * @return
      */
     @Override
     public Result listArchives() {
-        List<Archives>  listArchivres = articleMapper.listArchivres();
+        List<Archives> listArchivres = articleMapper.listArchivres();
         return Result.success(listArchivres);
     }
 
@@ -134,45 +136,105 @@ public class ArticleServiceImp implements ArticleService {
     @Override
     public ArticleVo findArticleById(Long id) {
         Article article = articleMapper.selectById(id);
-        threadService.updateViewCount(articleMapper,article);
-        return copy(article,true,true,true,true);
+        threadService.updateViewCount(articleMapper, article);
+        return copy(article, true, true, true, true);
+    }
+
+    @Override
+    @Transactional
+    public Result publish(ArticleParam articleParam) {
+        Article article = new Article();
+
+        //用户必须是登录的状态 否则空指针，也就是要加入登录拦截中
+        SysUser sysUser = UserThreadLocal.get();
+        Long id = sysUser.getId();
+
+        article.setAuthorId(id);
+
+        //插入之后，mybatisPlus会回写一个文章id
+        /**
+         * 相当重要的一步
+         */
+        article.setCreateDate(new Date().getTime());
+        article.setSummary(articleParam.getSummary());
+        article.setTitle(articleParam.getTitle());
+        article.setViewCounts(0);
+        article.setCommentCounts(0);
+        article.setCategoryId(articleParam.getCategory().getId());
+        //热度文章（普通文章）
+        article.setWeight(Article.Article_Common);
+        article.setBodyId(-1L);
+
+        this.articleMapper.insert(article);
+
+        //有一个  文章<-->标签 的多对多 的表，先进行这个表的操作
+        List<TagVo> tags = articleParam.getTags();
+        if (tags != null) {
+            for (TagVo tag : tags) {
+                ArticleTag articleTag = new ArticleTag();
+                articleTag.setArticleId(article.getId());
+                articleTag.setTagId(tag.getId());
+                this.articleTagMapper.insert(articleTag);
+            }
+        }
+
+        //还有一个 文章body的表 ，因为有主外键的关系存在 ，所以需要先生成articleId
+        ArticleBody articleBody = new ArticleBody();
+        articleBody.setArticleId(article.getId());
+        articleBody.setContent(articleParam.getBody().getContent());
+        articleBody.setContentHtml(articleParam.getBody().getContentHtml());
+        this.articleBodyMapper.insert(articleBody);
+
+        //article还需要一个bodyId
+        article.setBodyId(articleBody.getId());
+
+        this.articleMapper.updateById(article);
+
+        //TODO 这个地方有问题
+        Map<String, String> map = new HashMap<>();
+        map.put("id",article.getId().toString());
+
+        //返回的形式{"id":12232323},会自动解析成json
+        return Result.success(map);
     }
 
 
-    private List<ArticleVo> copyList(List<Article> records, boolean isTag, boolean isAuthor,boolean isBody) {
+    private List<ArticleVo> copyList(List<Article> records, boolean isTag, boolean isAuthor, boolean isBody) {
         List<ArticleVo> articleVoList = new ArrayList<>();
         for (Article record : records) {
-            articleVoList.add(copy(record,isTag,isAuthor,isBody,false));
+            articleVoList.add(copy(record, isTag, isAuthor, isBody, false));
         }
         return articleVoList;
     }
-    private List<ArticleVo> copyList(List<Article> records, boolean isTag, boolean isAuthor,boolean isBody,boolean isCategory) {
+
+    private List<ArticleVo> copyList(List<Article> records, boolean isTag, boolean isAuthor, boolean isBody, boolean isCategory) {
         List<ArticleVo> articleVoList = new ArrayList<>();
         for (Article record : records) {
-            articleVoList.add(copy(record,isTag,isAuthor,isBody,isCategory));
+            articleVoList.add(copy(record, isTag, isAuthor, isBody, isCategory));
         }
         return articleVoList;
     }
 
-    private ArticleVo copy(Article article, boolean isTag, boolean isAuthor, boolean isBody, boolean isCategory){
+    private ArticleVo copy(Article article, boolean isTag, boolean isAuthor, boolean isBody, boolean isCategory) {
+        System.out.println(article);
         ArticleVo articleVo = new ArticleVo();
-        BeanUtils.copyProperties(article,articleVo);
+        BeanUtils.copyProperties(article, articleVo);
 
         articleVo.setCreateDate(new DateTime(article.getCreateDate()).toString("yyyy-MM-dd HH:mm"));
         //并不是所有的接口 都需要标签 ，作者信息
-        if (isTag){
+        if (isTag) {
             Long articleId = article.getId();
             articleVo.setTags(tagService.findTagsByArticleId(articleId));
         }
-        if (isAuthor){
+        if (isAuthor) {
             Long authorId = article.getAuthorId();
             articleVo.setAuthor(sysUserService.findUserById(authorId).getNickname());
         }
-        if (isBody){
+        if (isBody) {
             ArticleBodyVo articleBody = findArticleBody(article.getId());
             articleVo.setBody(articleBody);
         }
-        if (isCategory){
+        if (isCategory) {
             CategoryVo categoryVo = findCategory(article.getCategoryId());
             articleVo.setCategory(categoryVo);
         }
@@ -186,12 +248,10 @@ public class ArticleServiceImp implements ArticleService {
         return categoryService.findCategoryById(categoryId);
     }
 
-    @Autowired
-    private ArticleBodyMapper articleBodyMapper;
 
     private ArticleBodyVo findArticleBody(Long articleId) {
         LambdaQueryWrapper<ArticleBody> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(ArticleBody::getArticleId,articleId);
+        queryWrapper.eq(ArticleBody::getArticleId, articleId);
         ArticleBody articleBody = articleBodyMapper.selectOne(queryWrapper);
         ArticleBodyVo articleBodyVo = new ArticleBodyVo();
         articleBodyVo.setContent(articleBody.getContent());
@@ -199,7 +259,7 @@ public class ArticleServiceImp implements ArticleService {
     }
 
 
-    private List<ArticleVo> copyList(List<Article> records , boolean isTag , boolean isAuthor){
+    private List<ArticleVo> copyList(List<Article> records, boolean isTag, boolean isAuthor) {
         //TODO
         //此处可以对迭代进行优化
         List<ArticleVo> list = new ArrayList<>();
@@ -207,23 +267,22 @@ public class ArticleServiceImp implements ArticleService {
         Iterator<Article> recordsIterator = records.iterator();
 
 
-        while(recordsIterator.hasNext()){
+        while (recordsIterator.hasNext()) {
             Article article = recordsIterator.next();
 
             System.out.println(article);
 
-            list.add(copy(article,isTag,isAuthor));
+            list.add(copy(article, isTag, isAuthor));
         }
-
 
 
         return list;
     }
 
 
-    private ArticleVo copy(Article article , boolean isTag , boolean isAuthor){
+    private ArticleVo copy(Article article, boolean isTag, boolean isAuthor) {
         ArticleVo articleVo = new ArticleVo();
-        BeanUtils.copyProperties(article , articleVo);
+        BeanUtils.copyProperties(article, articleVo);
 
         //转换article获取的Long时间至String
 
@@ -231,7 +290,7 @@ public class ArticleServiceImp implements ArticleService {
             这个方法有个弊端，如果是不需要创建时间的模块调用它的话会出现空指针问题
             所以要加个判断
         */
-        if(article.getCreateDate() != null) {
+        if (article.getCreateDate() != null) {
 
             Date date = new Date(article.getCreateDate());
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
@@ -242,11 +301,11 @@ public class ArticleServiceImp implements ArticleService {
         }
 
         /* 并不是所有的接口，都需要标签，作者信息 */
-        if(isTag){
+        if (isTag) {
             Long articleId = article.getId();
             articleVo.setTags(tagService.findTagsByArticleId(articleId));
         }
-        if(isAuthor){
+        if (isAuthor) {
             SysUser sysUser = sysUserService.findUserById(article.getAuthorId());
             String nickname = sysUser.getNickname();
             //防止出现空指针，imp层添加了判断条件
@@ -256,8 +315,6 @@ public class ArticleServiceImp implements ArticleService {
         //返回null了啊！！！！！！！！！ return null;
         return articleVo;
     }
-
-
 
 
 }

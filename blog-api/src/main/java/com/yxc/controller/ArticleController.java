@@ -1,10 +1,12 @@
 package com.yxc.controller;
 
 
+import com.yxc.common.aop.LogAnnotation;
 import com.yxc.service.ArticleService;
 import com.yxc.service.CommentService;
 import com.yxc.vo.ArticleVo;
 import com.yxc.vo.Result;
+import com.yxc.vo.params.ArticleParam;
 import com.yxc.vo.params.PageParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +26,7 @@ public class ArticleController {
      * @param pageParams
      */
     @PostMapping       //把网页的值封装成pageParams对象
+    @LogAnnotation(module="文章",operator="获取文章列表")
     public Result listArticle(@RequestBody PageParams pageParams){
         //这是Web层，从Service层调取方法
         System.out.println(123);
@@ -64,6 +67,11 @@ public class ArticleController {
         ArticleVo articleVo = articleService.findArticleById(id);
 
         return Result.success(articleVo);
+    }
+
+    @PostMapping("/publish")
+    public Result publish(@RequestBody ArticleParam articleParam){
+        return articleService.publish(articleParam);
     }
 
 }
